@@ -19,6 +19,7 @@ let package = Package(
         .package(url: "https://github.com/nats-io/nkeys.swift.git", from: "0.1.2"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
         .package(url: "https://github.com/Jarema/swift-nuid.git", from: "0.2.0"),
+        .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.13.0"),
     ],
     targets: [
         .target(
@@ -32,6 +33,7 @@ let package = Package(
                 .product(name: "NIOWebSocket", package: "swift-nio"),
                 .product(name: "NKeys", package: "nkeys.swift"),
                 .product(name: "Nuid", package: "swift-nuid"),
+                .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
             ]),
         .target(
             name: "JetStream",

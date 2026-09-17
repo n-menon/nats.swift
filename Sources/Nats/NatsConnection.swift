@@ -21,6 +21,7 @@ import NIOHTTP1
 import NIOSSL
 import NIOWebSocket
 import NKeys
+import NIOTransportServices
 
 final class ConnectionHandler: ChannelInboundHandler, Sendable {
     let lang = "Swift"
@@ -383,13 +384,15 @@ final class ConnectionHandler: ChannelInboundHandler, Sendable {
                 }
                 throw err
             case let error as NIOConnectionError:
-                if let dnsAAAAError = error.dnsAAAAError {
-                    throw NatsError.ConnectError.dns(dnsAAAAError)
-                } else if let dnsAError = error.dnsAError {
-                    throw NatsError.ConnectError.dns(dnsAError)
-                } else {
-                    throw NatsError.ConnectError.io(error)
+                let noAddress = error.connectionErrors.isEmpty && error.dnsAAAAError == nil && error.dnsAError == nil
+                if noAddress {
+                    if let dnsAAAAError = error.dnsAAAAError {
+                        throw NatsError.ConnectError.dns(dnsAAAAError)
+                    } else if let dnsAError = error.dnsAError {
+                        throw NatsError.ConnectError.dns(dnsAError)
+                    }
                 }
+                throw NatsError.ConnectError.io(error)
             case let err as NIOSSLError:
                 throw NatsError.ConnectError.tlsFailure(err)
             case let err as BoringSSLError:
@@ -635,14 +638,10 @@ final class ConnectionHandler: ChannelInboundHandler, Sendable {
 
     private func bootstrapConnection(
         to server: URL
-    ) -> (ClientBootstrap, EventLoopPromise<Void>) {
+    ) -> (NIOTSConnectionBootstrap, EventLoopPromise<Void>) {
         let upgradePromise: EventLoopPromise<Void> = self.group.any().makePromise(of: Void.self)
-        let bootstrap = ClientBootstrap(group: self.group)
-            .channelOption(
-                ChannelOptions.socket(
-                    SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
-                value: 1
-            )
+        let bootstrap = NIOTSConnectionBootstrap(group: self.group)
+            .connectTimeout(.seconds(5))
             .channelInitializer { channel in
                 if self.requireTls && self.tlsFirst {
                     upgradePromise.succeed(())
