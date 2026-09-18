@@ -101,7 +101,7 @@ final class ConnectionHandler: ChannelInboundHandler, Sendable {
         set { _reconnectTask.withLockedValue { $0 = newValue } }
     }
 
-    private let group: MultiThreadedEventLoopGroup
+    private let group: NIOTSEventLoopGroup
 
     private let serverInfoContinuation = NIOLockedValueBox<CheckedContinuation<ServerInfo, Error>?>(
         nil)
@@ -384,7 +384,7 @@ final class ConnectionHandler: ChannelInboundHandler, Sendable {
                 }
                 throw err
             case let error as NIOConnectionError:
-                let noAddress = error.connectionErrors.isEmpty && error.dnsAAAAError == nil && error.dnsAError == nil
+                let noAddress = error.connectionErrors.isEmpty && error.dnsAAAAError != nil && error.dnsAError != nil
                 if noAddress {
                     if let dnsAAAAError = error.dnsAAAAError {
                         throw NatsError.ConnectError.dns(dnsAAAAError)
